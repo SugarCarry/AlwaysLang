@@ -70,35 +70,30 @@ FluWindow {
         }
     }
 
-    FluLoader {
-        id: loader_reveal
-        anchors.fill: parent
-    }
-
     Connections {
         target: NativeTray
 
         function onShowWindowRequested() {
-            console.log("MainWindow: onShowWindowRequested called")
             restoreFromTray()
         }
 
         function onToggleLanguageFollowDisplayRequested() {
-            console.log("MainWindow: onToggleLanguageFollowDisplayRequested, current:", GlobalModel.languageFollowDisplay)
-            GlobalModel.languageFollowDisplay = !GlobalModel.languageFollowDisplay
-            SettingsHelper.saveLanguageFollowDisplay(GlobalModel.languageFollowDisplay)
-            NativeTray.setLanguageFollowDisplay(GlobalModel.languageFollowDisplay)
-            console.log("MainWindow: languageFollowDisplay changed to:", GlobalModel.languageFollowDisplay)
+            // 强制刷新浮层可见性
+            if (GlobalModel.languageFollowDisplay) {
+                language_overlay.show()
+                language_overlay.visible = true
+            } else {
+                language_overlay.hide()
+                language_overlay.visible = false
+            }
         }
 
         function onSettingsRequested() {
-            console.log("MainWindow: onSettingsRequested called")
             restoreFromTray()
             nav_view.push("qrc:/qml/page/settings.qml")
         }
 
         function onQuitRequested() {
-            console.log("MainWindow: onQuitRequested called")
             FluRouter.exit(0)
         }
     }
@@ -136,7 +131,7 @@ FluWindow {
 
         x: targetX
         y: targetY
-        visible: GlobalModel.languageFollowDisplay && GlobalModel.caretRect.valid && GlobalModel.currentLanguage !== "--"
+        visible: GlobalModel.languageFollowDisplay && GlobalModel.caretRect.valid
         flags: Qt.Tool | Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.WindowDoesNotAcceptFocus | Qt.BypassWindowManagerHint
         color: "transparent"
         // 整体不透明度由设置项控制 (10 - 50 映射为 0.1 - 0.5)
@@ -209,9 +204,6 @@ FluWindow {
     }
 
     Component.onCompleted: {
-        console.log("MainWindow: Component.onCompleted")
-        console.log("MainWindow: window object:", window)
-        console.log("MainWindow: languageFollowDisplay:", GlobalModel.languageFollowDisplay)
         NativeTray.setWindow(window)
         NativeTray.setLanguageFollowDisplay(GlobalModel.languageFollowDisplay)
     }
@@ -225,39 +217,17 @@ FluWindow {
     }
 
     function restoreFromTray() {
-        console.log("MainWindow: restoreFromTray called, current visibility:", window.visibility)
         timer_window_hide_delay.stop()
         if (window.visibility === Window.Minimized) {
             window.showNormal()
-        } else if (window.visibility === Window.Hidden) {
-            window.show()
         } else {
             window.show()
         }
         window.raise()
         window.requestActivate()
-        console.log("MainWindow: restoreFromTray completed, visibility:", window.visibility)
-    }
-
-    function changeDark() {
-        FluTheme.darkMode = FluTheme.dark ? FluThemeType.Light : FluThemeType.Dark
     }
 
     function handleDarkChanged(button) {
-        if (!FluTheme.animationEnabled || window.fitsAppBarWindows === false) {
-            changeDark()
-        } else {
-            if (loader_reveal.sourceComponent) {
-                return
-            }
-            loader_reveal.sourceComponent = com_reveal
-            var target = window.containerItem()
-            var pos = button.mapToItem(target, 0, 0)
-            var mouseX = pos.x
-            var mouseY = pos.y
-            var radius = Math.max(distance(mouseX, mouseY, 0, 0), distance(mouseX, mouseY, target.width, 0), distance(mouseX, mouseY, 0, target.height), distance(mouseX, mouseY, target.width, target.height))
-            var reveal = loader_reveal.item
-            reveal.start(reveal.width * Screen.devicePixelRatio, reveal.height * Screen.devicePixelRatio, Qt.point(mouseX, mouseY), radius)
-        }
+        FluTheme.darkMode = FluTheme.dark ? FluThemeType.Light : FluThemeType.Dark
     }
 }

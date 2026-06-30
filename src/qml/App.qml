@@ -25,6 +25,9 @@ FluLauncher {
             GlobalModel.languageFollowDisplay = !GlobalModel.languageFollowDisplay
             SettingsHelper.saveLanguageFollowDisplay(GlobalModel.languageFollowDisplay)
             NativeTray.setLanguageFollowDisplay(GlobalModel.languageFollowDisplay)
+
+            // 通知 MainWindow 强制刷新浮层
+            NativeTray.triggerToggleLanguageFollowDisplay()
         }
     }
 

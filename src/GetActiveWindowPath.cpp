@@ -1,33 +1,33 @@
 #include "GetActiveWindowPath.h"
+#include <QJsonArray>
+#include <QJsonDocument>
 #include <QRegularExpression>
-#include <QDebug>
 
 GetActiveWindowPath::GetActiveWindowPath(QObject *parent) : QObject(parent) {}
 
 QString GetActiveWindowPath::GetProcessPathByWindowHandle(HWND hwnd) {
-    DWORD processId;
-    DWORD threadId = GetWindowThreadProcessId(hwnd, &processId);
-
-    if (threadId == 0) {
-        return "error: 无法获取窗口线程 ID";
+    DWORD processId = 0;
+    if (GetWindowThreadProcessId(hwnd, &processId) == 0 || processId == 0) {
+        return QString();
     }
 
-    HANDLE processHandle = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, processId);
+    // PROCESS_QUERY_LIMITED_INFORMATION 无需高权限,
+    // 普通权限运行时也能取到"以管理员身份运行"的前台窗口的进程路径
+    HANDLE processHandle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, processId);
     if (processHandle == NULL) {
-        qDebug() << "无法打开进程，错误代码: " << GetLastError();
-        return "error: 无法打开进程，错误代码: ";
+        return QString();
     }
 
     WCHAR processPath[MAX_PATH];
-
-    if (0 == GetModuleFileNameEx(processHandle, NULL, processPath, MAX_PATH)) {
-        CloseHandle(processHandle);
-        return "error: 无法获取窗口线程的信息";
-    }
-
+    DWORD pathLength = MAX_PATH;
+    const BOOL ok = QueryFullProcessImageNameW(processHandle, 0, processPath, &pathLength);
     CloseHandle(processHandle);
 
-    QFileInfo fileInfo(QString::fromWCharArray(processPath));
+    if (!ok) {
+        return QString();
+    }
+
+    QFileInfo fileInfo(QString::fromWCharArray(processPath, pathLength));
 
     return fileInfo.filePath();
 }
@@ -35,30 +35,19 @@ QString GetActiveWindowPath::GetProcessPathByWindowHandle(HWND hwnd) {
 QString GetActiveWindowPath::getCurrentActiveWindow() {
     HWND foreGroundWindowHwnd = GetForegroundWindow();
 
-    if (NULL == foreGroundWindowHwnd) {
-        return "error: 无法获取前台窗口句柄";
+    if (NULL == foreGroundWindowHwnd || !IsWindow(foreGroundWindowHwnd)) {
+        return QString();
     }
 
-    if (!IsWindow(foreGroundWindowHwnd)) {
-        return "error: 前台窗口句柄无效";
-    }
-
-    QString processPath = GetProcessPathByWindowHandle(foreGroundWindowHwnd);
-    if (processPath.isEmpty()) {
-        return "error: 无法获取进程路径";
-    }
-
-    return processPath;
+    return GetProcessPathByWindowHandle(foreGroundWindowHwnd);
 }
 
 QString GetActiveWindowPath::extractExeName(const QString &path) {
-    // 定义正则表达式模式
-    QRegularExpression pattern(R"(([^/\\]+)\.exe$)");
+    static const QRegularExpression pattern(R"(([^/\\]+)\.exe$)",
+                                            QRegularExpression::CaseInsensitiveOption);
     QRegularExpressionMatch match = pattern.match(path);
 
-    // 检查匹配是否成功
     if (match.hasMatch()) {
-        // 提取匹配的组
         return match.captured(1);
     }
     return "";
@@ -74,20 +63,22 @@ bool GetActiveWindowPath::isTargetWindow() {
         return false;
     }
 
-    // 将列表字符串用 , 分割
-    QString exes = m_settings->getExistingFilePath();
-    auto fileList = exes.split(",");
+    // 软件列表以 JSON 数组字符串保存, 只在 UI 保存时变化,
+    // 原始字符串未变时复用上次解析出的 exe 名集合
+    const QString raw = m_settings->getExistingFilePath();
+    if (raw != m_existingCacheRaw) {
+        m_existingCacheRaw = raw;
+        m_existingExeNames.clear();
 
-    // 判断列表里面有没有当前窗口
-    for (const auto &i: fileList) {
-        if (i.contains(exeName)) {
-            return true;
+        const QJsonArray fileList = QJsonDocument::fromJson(raw.toUtf8()).array();
+        for (const auto &item: fileList) {
+            const QString name = extractExeName(item.toString()).toLower();
+            if (!name.isEmpty()) {
+                m_existingExeNames.insert(name);
+            }
         }
     }
 
-#ifdef _DEBUG
-    qDebug() << exeName << "不在列表";
-#endif
-
-    return false;
+    // 按 exe 名称精确匹配, 避免子串误匹配 (如 cmd 误匹配 cmder)
+    return m_existingExeNames.contains(exeName.toLower());
 }

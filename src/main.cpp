@@ -5,41 +5,14 @@
 #include <QTranslator>
 #include <QDir>
 #include <QObject>
-#include <QThread>
-#include <QFile>
-#include <QTextStream>
-#include <QDateTime>
 #include <QWindow>
 #include <QTimer>
 #include "IconProvider.h"
 #include "LnkResolver.h"
 #include "ControlInputLayout.h"
-#include "GetActiveWindowPath.h"
 #include "NativeTray.h"
 #include "helper/SettingsHelper.h"
 #include "utils.hpp"
-
-void messageHandler(QtMsgType type, const QMessageLogContext &context, const QString &msg) {
-    static QFile logFile(QCoreApplication::applicationDirPath() + "/debug.log");
-    static bool opened = false;
-    if (!opened) {
-        opened = logFile.open(QIODevice::WriteOnly | QIODevice::Append | QIODevice::Text);
-    }
-
-    if (opened) {
-        QTextStream out(&logFile);
-        out << QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss.zzz") << " ";
-        switch (type) {
-            case QtDebugMsg: out << "[DEBUG] "; break;
-            case QtInfoMsg: out << "[INFO] "; break;
-            case QtWarningMsg: out << "[WARN] "; break;
-            case QtCriticalMsg: out << "[CRITICAL] "; break;
-            case QtFatalMsg: out << "[FATAL] "; break;
-        }
-        out << msg << "\n";
-        out.flush();
-    }
-}
 
 int main(int argc, char *argv[]) {
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
@@ -50,9 +23,6 @@ int main(int argc, char *argv[]) {
     QApplication::setWindowIcon(QIcon(":/res/images/favicon.ico"));
     QGuiApplication::setQuitOnLastWindowClosed(false);
     QDir::setCurrent(QCoreApplication::applicationDirPath());
-
-    qInstallMessageHandler(messageHandler);
-    qDebug() << "=== AlwaysLang Starting ===";
 
     SettingsHelper::getInstance()->init(argv);
 
@@ -66,18 +36,15 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    qDebug() << "Creating NativeTray...";
     NativeTray nativeTray;
     QObject::connect(&nativeTray, &NativeTray::quitRequested, &app, &QApplication::quit);
     QObject::connect(&app, &QCoreApplication::aboutToQuit,
                      &nativeTray, &NativeTray::hide);
 
-    qDebug() << "Setting up QML engine...";
     QQmlApplicationEngine engine;
     engine.rootContext()->setContextProperty("iconProvider", IconProvider::getInstance());
     engine.rootContext()->setContextProperty("LnkResolver", LnkResolver::getInstance());
     engine.rootContext()->setContextProperty("ControlInputLayout", ControlInputLayout::getInstance());
-    engine.rootContext()->setContextProperty("GetActiveWindowPath", GetActiveWindowPath::getInstance());
     engine.rootContext()->setContextProperty("NativeTray", &nativeTray);
     engine.rootContext()->setContextProperty("SettingsHelper", SettingsHelper::getInstance());
     engine.rootContext()->setContextProperty("Utils", Utils::getInstance());
@@ -86,25 +53,18 @@ int main(int argc, char *argv[]) {
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreated,
                      &app, [url, &nativeTray](QObject *obj, const QUrl &objUrl) {
                 if (!obj && url == objUrl) {
-                    qDebug() << "Failed to load QML!";
                     QCoreApplication::exit(-1);
                 } else if (obj && url == objUrl) {
-                    qDebug() << "QML loaded successfully";
-
                     // 兜底: 若 QML 侧未成功调用 setWindow, 这里按标题匹配主窗口
                     // 注意: 不能简单取第一个顶层窗口, 因为语言浮层(language_overlay)
                     // 也是一个顶层 Window, 可能被误选, 导致双击托盘激活的是浮层而非主界面
                     QTimer::singleShot(500, [&nativeTray]() {
                         if (nativeTray.hasWindow()) {
-                            qDebug() << "Window already set by QML, skip fallback";
                             return;
                         }
-                        auto windows = qApp->topLevelWindows();
-                        qDebug() << "Found" << windows.size() << "top level windows";
+                        const auto windows = qApp->topLevelWindows();
                         QWindow *mainWindow = nullptr;
                         for (auto window : windows) {
-                            qDebug() << "Window:" << window << "title:" << window->title()
-                                     << "size:" << window->size();
                             // 主窗口标题为 AlwaysLang 且尺寸较大, 浮层标题为空且很小
                             if (window && window->title() == QStringLiteral("AlwaysLang")) {
                                 mainWindow = window;
@@ -123,7 +83,6 @@ int main(int argc, char *argv[]) {
                             }
                         }
                         if (mainWindow) {
-                            qDebug() << "Fallback setting main window to NativeTray:" << mainWindow->title();
                             nativeTray.setWindow(mainWindow);
                         }
                     });
@@ -131,6 +90,5 @@ int main(int argc, char *argv[]) {
             }, Qt::QueuedConnection);
     engine.load(url);
 
-    qDebug() << "Entering event loop...";
     return app.exec();
 }

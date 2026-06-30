@@ -1,6 +1,6 @@
 1 VERSIONINFO
- FILEVERSION 3,0
- PRODUCTVERSION 3,0
+ FILEVERSION ${PROJECT_VERSION_MAJOR},${PROJECT_VERSION_MINOR}
+ PRODUCTVERSION ${PROJECT_VERSION_MAJOR},${PROJECT_VERSION_MINOR}
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -17,12 +17,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "ChaXxl"
             VALUE "FileDescription", "${PROJECT_DESCRIPTION}"
-            VALUE "FileVersion", "${GIT_SEMVER}.${GIT_COMMIT_COUNT}"
+            VALUE "FileVersion", "${GIT_SEMVER}"
             VALUE "InternalName", "${PROJECT_NAME}.exe"
             VALUE "LegalCopyright", "Copyright (C) 2024 ChaXxl. All rights reserved."
             VALUE "OriginalFilename", "${PROJECT_NAME}.exe"
             VALUE "ProductName", "${PROJECT_NAME}"
-            VALUE "ProductVersion", "${PRODUCTVERSION}"
+            VALUE "ProductVersion", "${GIT_SEMVER}"
         END
     END
     BLOCK "VarFileInfo"

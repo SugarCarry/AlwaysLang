@@ -51,7 +51,6 @@ FluScrollablePage {
             id: _autoStart
 
             text: qsTr("Running at start")
-            anchors.top: _isAlwaysCapLock.bottom
             anchors.verticalCenter: parent.verticalCenter
 
             onClicked: {

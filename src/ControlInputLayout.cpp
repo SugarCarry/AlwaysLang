@@ -1,18 +1,14 @@
 #include "ControlInputLayout.h"
 #include "GetActiveWindowPath.h"
-#include <QJSEngine>
-#include <QJSValue>
-#include <QVariantMap>
-#include <QtGlobal>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <windows.h>
 #include <imm.h>
 
 // WM_IME_CONTROL 的子命令常量在部分 Windows SDK 的 imm.h 中未公开定义,
-// 这些是 Windows 上通用且稳定的值, 手动补充以便跨进程查询 IME 转换模式
+// 这是 Windows 上通用且稳定的值, 手动补充以便跨进程查询 IME 转换模式
 #ifndef IMC_GETCONVERSIONMODE
 #define IMC_GETCONVERSIONMODE 0x0001
-#endif
-#ifndef IMC_GETOPENSTATUS
-#define IMC_GETOPENSTATUS 0x0005
 #endif
 
 namespace {
@@ -104,36 +100,39 @@ void ControlInputLayout::alwaysStoptTask() {
     m_timer_always->stop();
 }
 
-bool ControlInputLayout::isCapLock() {
-    loadCurrentWindowSettings();
-    return m_isCapLock;
-}
-
 void ControlInputLayout::loadCurrentWindowSettings() {
     m_isTurnOn = false;
     m_isCapLock = false;
     m_currentTargetLanguage = "ENG";
 
-    QString exeInfos_str = m_settings->getExeInfos();
+    // 配置只在 UI 保存时变化, 原始字符串未变时复用上次的解析结果,
+    // 避免 100ms 轮询每个 tick 都全量解析 JSON
+    const QString raw = m_settings->getExeInfos();
+    if (raw != m_exeInfosCacheRaw) {
+        m_exeInfosCacheRaw = raw;
+        m_exeInfosCache.clear();
 
-    QJSEngine engine;
-
-    QJSValue jsObject = engine.evaluate("(" + exeInfos_str + ")");
-
-    if (!jsObject.isObject()) {
-        return;
+        const QJsonObject infos = QJsonDocument::fromJson(raw.toUtf8()).object();
+        for (auto it = infos.begin(); it != infos.end(); ++it) {
+            const QString name = GetActiveWindowPath::extractExeName(it.key()).toLower();
+            if (name.isEmpty()) {
+                continue;
+            }
+            const QJsonObject exeInfo = it.value().toObject();
+            AppSetting setting;
+            setting.isTurnOn = exeInfo.value("isTurnOn").toBool();
+            setting.isCapLock = exeInfo.value("isCapLock").toBool();
+            setting.targetLanguage = normalizeLanguage(exeInfo.value("targetLanguage").toString("ENG"));
+            m_exeInfosCache.insert(name, setting);
+        }
     }
 
-    QVariantMap variantMap = jsObject.toVariant().toMap();
-
-    for (const auto &key: variantMap.keys()) {
-        if (key.contains(gw->exeName)) {
-            const auto exeInfo = variantMap[key].toMap();
-            m_isTurnOn = exeInfo["isTurnOn"].toBool();
-            m_isCapLock = exeInfo["isCapLock"].toBool();
-            m_currentTargetLanguage = normalizeLanguage(exeInfo.value("targetLanguage", "ENG").toString());
-            break;
-        }
+    // 按 exe 名称精确匹配, 避免子串误匹配 (如 cmd 误匹配 cmder)
+    const auto it = m_exeInfosCache.constFind(gw->exeName.toLower());
+    if (it != m_exeInfosCache.constEnd()) {
+        m_isTurnOn = it->isTurnOn;
+        m_isCapLock = it->isCapLock;
+        m_currentTargetLanguage = it->targetLanguage;
     }
 }
 
@@ -183,10 +182,12 @@ void ControlInputLayout::switchToLanguage(const QString &language) {
         return;
     }
 
-    const DWORD threadId = GetWindowThreadProcessId(foregroundWindow, NULL);
-    HKL hkl = GetKeyboardLayout(threadId);
+    HKL currentLayout = keyboardLayoutForWindow(foregroundWindow);
+    if (!currentLayout) {
+        return;
+    }
 
-    if (!layoutMatchesLanguage(hkl, normalizedLanguage)) {
+    if (!layoutMatchesLanguage(currentLayout, normalizedLanguage)) {
         PostMessage(foregroundWindow, WM_INPUTLANGCHANGEREQUEST, 0,
                     reinterpret_cast<LPARAM>(targetLayout));
     }
@@ -200,14 +201,42 @@ void ControlInputLayout::capLock() {
     }
 }
 
+HKL ControlInputLayout::keyboardLayoutForWindow(HWND window) const {
+    if (!window) {
+        return nullptr;
+    }
+
+    const DWORD threadId = GetWindowThreadProcessId(window, NULL);
+    if (const HKL layout = GetKeyboardLayout(threadId)) {
+        return layout;
+    }
+
+    // 控制台窗口(CMD/PowerShell)由 conhost 托管, GetWindowThreadProcessId
+    // 返回的是控制台程序的伪线程 ID, 用它查键盘布局得到 0;
+    // 而其默认 IME 窗口属于 conhost 的真实输入线程, 经该线程可查到布局
+    const HWND imeWindow = ImmGetDefaultIMEWnd(window);
+    if (!imeWindow) {
+        return nullptr;
+    }
+    const DWORD imeThreadId = GetWindowThreadProcessId(imeWindow, NULL);
+    if (!imeThreadId) {
+        // 传 0 给 GetKeyboardLayout 查到的是自己线程的布局, 不能作为回退
+        return nullptr;
+    }
+    return GetKeyboardLayout(imeThreadId);
+}
+
 QString ControlInputLayout::getCurrentInputLanguage() const {
     const HWND foregroundWindow = GetForegroundWindow();
     if (!foregroundWindow) {
         return "--";
     }
 
-    const DWORD threadId = GetWindowThreadProcessId(foregroundWindow, NULL);
-    HKL hkl = GetKeyboardLayout(threadId);
+    HKL hkl = keyboardLayoutForWindow(foregroundWindow);
+    if (!hkl) {
+        return "--";
+    }
+
     const auto langId = LOWORD(reinterpret_cast<quintptr>(hkl));
     const QString layoutLanguage = languageNameFromLangId(langId);
 
@@ -219,8 +248,10 @@ QString ControlInputLayout::getCurrentInputLanguage() const {
     // 中文/韩文等 IME: 键盘布局语言无法反映"中/英"子模式
     // 需查询 IME 的转换模式 (IME_CMODE_NATIVE): 置位为本地语言(中/한), 清除为英文
     // 跨进程查询用 WM_IME_CONTROL + IMC_GETCONVERSIONMODE 发送到目标窗口的默认 IME 窗口
-    bool nativeMode = true;
+    // (控制台窗口的默认 IME 窗口属于 conhost, 同样能响应该查询)
+    bool nativeMode = false;  // 默认为英文模式, 避免查询失败时误判
     const HWND hwndIme = ImmGetDefaultIMEWnd(foregroundWindow);
+
     if (hwndIme) {
         DWORD_PTR conversionMode = 0;
         const LRESULT ok = SendMessageTimeoutW(hwndIme, WM_IME_CONTROL,
@@ -297,6 +328,24 @@ QVariantMap ControlInputLayout::getCaretRect() const {
         return rect;
     }
 
+    // 优先检查是否为控制台窗口，直接返回固定位置
+    wchar_t className[256] = {0};
+    if (GetClassNameW(foregroundWindow, className, 256) > 0) {
+        if (wcscmp(className, L"ConsoleWindowClass") == 0) {
+            // CMD/PowerShell: 显示在窗口左上角偏移位置
+            RECT windowRect;
+            if (GetWindowRect(foregroundWindow, &windowRect)) {
+                POINT point = {windowRect.left + 12, windowRect.top + 80};
+                rect["x"] = static_cast<qlonglong>(point.x);
+                rect["y"] = static_cast<qlonglong>(point.y);
+                rect["width"] = static_cast<qlonglong>(1);
+                rect["height"] = static_cast<qlonglong>(24);
+                rect["valid"] = true;
+                return rect;
+            }
+        }
+    }
+
     auto setRectFromPoint = [&rect](const POINT &point, LONG width, LONG height) {
         rect["x"] = static_cast<qlonglong>(point.x);
         rect["y"] = static_cast<qlonglong>(point.y);
@@ -347,6 +396,7 @@ QVariantMap ControlInputLayout::getCaretRect() const {
 
     RECT windowRect;
     if (GetWindowRect(foregroundWindow, &windowRect)) {
+        // 其他窗口: 使用默认偏移
         POINT point = {windowRect.left + 16, windowRect.top + 48};
         setRectFromPoint(point, 1, 24);
     }

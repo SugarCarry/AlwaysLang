@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 
-project(AlwaysLang VERSION 3.0 LANGUAGES CXX)
+project(AlwaysLang VERSION 3.1 DESCRIPTION "AlwaysLang - per-app input language follower" LANGUAGES CXX)
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
@@ -36,6 +36,10 @@ add_custom_target(Script-UpdateTranslations
 #如果是Windows平台，则生成rc文件，还有inno setup脚本文件
 set(ALWAYSENGLISH_VERSION_RC_PATH "")
 if (WIN32)
+    # CI 通过 -DGIT_SEMVER=x.y 传入版本号, 本地构建时回退为项目版本
+    if (NOT GIT_SEMVER)
+        set(GIT_SEMVER ${PROJECT_VERSION})
+    endif ()
     set(ALWAYSENGLISH_VERSION_RC_PATH ${CMAKE_CURRENT_BINARY_DIR}/version_${PROJECT_NAME}.rc)
     configure_file(
             ${CMAKE_SOURCE_DIR}/.cmake/version_exe.rc.in

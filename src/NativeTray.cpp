@@ -7,7 +7,6 @@
 #include <QStyle>
 #include <QTimer>
 #include <QWindow>
-#include <QDebug>
 
 namespace {
 constexpr int kTrayShowRetryIntervalMs = 1000;
@@ -117,15 +116,10 @@ void NativeTray::showMessage(const QString &title, const QString &message) {
 
 void NativeTray::showWindow() {
     if (!m_window) {
-        qDebug() << "NativeTray::showWindow - m_window is null!";
         return;
     }
 
-    qDebug() << "NativeTray::showWindow - showing window, current visibility:" << m_window->visibility();
-
-    if (m_window->visibility() == QWindow::Hidden) {
-        m_window->show();
-    } else if (m_window->visibility() == QWindow::Minimized) {
+    if (m_window->visibility() == QWindow::Minimized) {
         m_window->showNormal();
     } else {
         m_window->show();
@@ -163,4 +157,8 @@ void NativeTray::updateToggleText() {
     const auto status = m_languageFollowDisplay ? tr("On") : tr("Off");
     m_toggleLanguageFollowAction->setText(tr("Input position language display") + QStringLiteral(": ") + status);
     m_toggleLanguageFollowAction->setChecked(m_languageFollowDisplay);
+}
+
+void NativeTray::triggerToggleLanguageFollowDisplay() {
+    emit toggleLanguageFollowDisplayRequested();
 }

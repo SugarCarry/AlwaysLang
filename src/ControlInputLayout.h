@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QHash>
 #include <QObject>
 #include <QPoint>
 #include <QString>
@@ -16,11 +17,21 @@ Q_OBJECT
     Q_PROPERTY(QVariantMap caretRect READ caretRect NOTIFY caretRectChanged)
 
 private:
+    // 单个软件的跟随配置 (解析自 exeInfos, 以小写 exe 名为键缓存)
+    struct AppSetting {
+        bool isTurnOn = false;
+        bool isCapLock = false;
+        QString targetLanguage = QStringLiteral("ENG");
+    };
+
     bool m_isCapLock;
     bool m_isTurnOn;
     QString m_currentLanguage;
     QString m_currentTargetLanguage;
     QVariantMap m_caretRect;
+
+    QString m_exeInfosCacheRaw;
+    QHash<QString, AppSetting> m_exeInfosCache;
 
     QTimer *m_timer;
     QTimer *m_timer_always;
@@ -40,11 +51,11 @@ private:
 
     void capLock();
 
-    bool isCapLock();
-
     void loadCurrentWindowSettings();
 
     QString getCurrentInputLanguage() const;
+
+    HKL keyboardLayoutForWindow(HWND window) const;
 
     QVariantMap getCaretRect() const;
 

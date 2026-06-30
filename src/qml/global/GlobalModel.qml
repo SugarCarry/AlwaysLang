@@ -4,7 +4,6 @@ import QtQuick 2.15
 import FluentUI 1.0
 
 QtObject {
-    property int testInt: 0
     property bool isAlwaysCapLock: true
 
     // 开机自启动

@@ -23,6 +23,7 @@ public:
     Q_INVOKABLE void showMessage(const QString &title, const QString &message);
     Q_INVOKABLE void showWindow();
     Q_INVOKABLE void hide();
+    Q_INVOKABLE void triggerToggleLanguageFollowDisplay();
 
 signals:
     void showWindowRequested();

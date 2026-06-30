@@ -52,8 +52,9 @@ QString LnkResolver::resolveLnk(const QString &lnkPath) {
         return QString();
     }
 
-    // 获取链接目标的路径
-    hres = psl->GetPath(szGotPath, MAX_PATH, (WIN32_FIND_DATA *) &wfd, SLGP_SHORTPATH);
+    // 获取链接目标的路径 (用默认长路径; SLGP_SHORTPATH 的 8.3 短路径
+    // 会把长文件名截断成 XXXXXX~1.EXE, 导致按 exe 名匹配失效)
+    hres = psl->GetPath(szGotPath, MAX_PATH, (WIN32_FIND_DATA *) &wfd, 0);
     if (FAILED(hres)) {
         ppf->Release();
         psl->Release();

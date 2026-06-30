@@ -44,8 +44,13 @@ Source: ".\..\{#MyAppFileDir}\*"; DestDir: "{app}"; Flags: ignoreversion recurse
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]
-Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
+; 不在开始菜单创建快捷方式, 仅在用户勾选时创建桌面快捷方式
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
+
+[InstallDelete]
+; 清理旧版本遗留在开始菜单中的快捷方式
+Type: files; Name: "{autoprograms}\{#MyAppName}.lnk"
+Type: files; Name: "{autoprograms}\AlwaysEnglish.lnk"
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
