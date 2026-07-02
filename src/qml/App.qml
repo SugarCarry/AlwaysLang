@@ -39,9 +39,9 @@ FluLauncher {
         FluApp.windowIcon = "qrc:/res/images/favicon.ico"
 
         FluTheme.darkMode = SettingsHelper.getDarkMode()
-        GlobalModel.isAlwaysCapLock = SettingsHelper.getCapLock()
         GlobalModel.languageFollowDisplay = SettingsHelper.getLanguageFollowDisplay()
         GlobalModel.languageOverlayOpacity = SettingsHelper.getLanguageOverlayOpacity()
+        GlobalModel.languageOverlayColor = SettingsHelper.getLanguageOverlayColor()
         GlobalModel.languageFollowHotkeyEnabled = SettingsHelper.getLanguageFollowHotkeyEnabled()
         GlobalModel.languageFollowHotkey = SettingsHelper.getLanguageFollowHotkey()
         GlobalModel.currentLanguage = ControlInputLayout.refreshCurrentLanguage()

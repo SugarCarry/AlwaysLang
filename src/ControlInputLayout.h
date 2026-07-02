@@ -2,9 +2,9 @@
 
 #include <QHash>
 #include <QObject>
-#include <QPoint>
 #include <QString>
 #include <QTimer>
+#include <QVariantList>
 #include <QVariantMap>
 #include <windows.h>
 #include "singleton.h"
@@ -21,20 +21,20 @@ private:
     struct AppSetting {
         bool isTurnOn = false;
         bool isCapLock = false;
-        QString targetLanguage = QStringLiteral("ENG");
+        int targetLanguage = 0x0409;  // LANGID, 默认 en-US
     };
 
     bool m_isCapLock;
     bool m_isTurnOn;
     QString m_currentLanguage;
-    QString m_currentTargetLanguage;
+    int m_currentTargetLanguage;  // LANGID
+
     QVariantMap m_caretRect;
 
     QString m_exeInfosCacheRaw;
     QHash<QString, AppSetting> m_exeInfosCache;
 
     QTimer *m_timer;
-    QTimer *m_timer_always;
 
     SettingsHelper *m_settings = SettingsHelper::getInstance();
 
@@ -45,9 +45,7 @@ private:
 
     ~ControlInputLayout();
 
-    void switchToLanguage(const QString &language);
-
-    void switchToEnglish();
+    void switchToLanguage(int langId);
 
     void capLock();
 
@@ -59,11 +57,7 @@ private:
 
     QVariantMap getCaretRect() const;
 
-    QString normalizeLanguage(const QString &language) const;
-
-    bool isInputInstalled(const QString &language) const;
-
-    HKL findInstalledLayout(const QString &language) const;
+    HKL findInstalledLayout(int langId) const;
 
     void updateCurrentLanguage();
 
@@ -72,9 +66,14 @@ private:
 public:
 SINGLETON(ControlInputLayout)
 
-    Q_INVOKABLE bool isEnglishInputInstalled();
+    // 枚举系统已安装的输入语言 (按 LANGID 去重)
+    // 每项: { langId: int, label: 短标签(如 ENG/中/한/日/FR), name: 本地化语言名 }
+    Q_INVOKABLE QVariantList installedLanguages() const;
 
-    Q_INVOKABLE bool isTargetInputInstalled(const QString &language);
+    Q_INVOKABLE bool isTargetInputInstalled(int langId);
+
+    // 旧版本以字符串 (ENG / 中 / 한 / ZH / CN) 保存目标语言, 转换为 LANGID
+    Q_INVOKABLE int legacyLanguageToId(const QString &language) const;
 
     Q_INVOKABLE QString currentLanguage() const;
 
@@ -82,15 +81,9 @@ SINGLETON(ControlInputLayout)
 
     Q_INVOKABLE QString refreshCurrentLanguage();
 
-    Q_INVOKABLE void gotoLanguageSettings();
-
     Q_INVOKABLE void startTask();
 
-    Q_INVOKABLE void alwaysStartTask();
-
     Q_INVOKABLE void stopTask();
-
-    Q_INVOKABLE void alwaysStoptTask();
 
 signals:
     void currentLanguageChanged(const QString &language);
@@ -100,6 +93,4 @@ signals:
 private slots:
 
     void onTimerTimeout();
-
-    void onTimerTimeout_always();
 };

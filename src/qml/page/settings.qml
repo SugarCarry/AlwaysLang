@@ -73,7 +73,7 @@ FluScrollablePage {
     FluFrame {
         Layout.fillWidth: true
         Layout.topMargin: 20
-        // 高度随内容自适应 (含复选框/透明度/快捷键三行), 避免固定高度裁切
+        // 高度随内容自适应, 避免固定高度裁切
         height: _languageFollowColumn.implicitHeight + 20
         padding: 10
 
@@ -118,7 +118,8 @@ FluScrollablePage {
 
                 Slider {
                     id: _overlayOpacity
-                    Layout.fillWidth: true
+                    // 固定适中宽度, 拉满整行既不美观也不便于精确调节
+                    Layout.preferredWidth: 280
                     from: 10
                     to: 50
                     stepSize: 1
@@ -180,6 +181,68 @@ FluScrollablePage {
                     text: Math.round(_overlayOpacity.value) + "%"
                     Layout.preferredWidth: 44
                 }
+
+                Item { Layout.fillWidth: true }
+            }
+
+            // 浮窗背景色: "auto" 跟随明暗主题, 其余为固定颜色
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 12
+                enabled: _languageFollowDisplay.checked
+
+                FluText {
+                    text: qsTr("Overlay color")
+                    Layout.preferredWidth: 120
+                }
+
+                Row {
+                    spacing: 8
+
+                    Repeater {
+                        model: ["auto", "#FFFFFF", "#1F1F1F", "#0F6CBD", "#0F7B0F", "#C50F1F", "#CA5010", "#886CE4"]
+
+                        delegate: Rectangle {
+                            width: 22
+                            height: 22
+                            radius: 11
+                            color: modelData === "auto"
+                                   ? (FluTheme.dark ? "#2B2B2B" : "#F3F3F3")
+                                   : modelData
+                            border.width: GlobalModel.languageOverlayColor === modelData ? 2 : 1
+                            border.color: GlobalModel.languageOverlayColor === modelData
+                                          ? FluTheme.primaryColor
+                                          : (FluTheme.dark ? "#666666" : "#CCCCCC")
+
+                            // "auto" 色块用 A 标识: 根据浮窗背后画面明暗自动调整底色
+                            FluText {
+                                visible: modelData === "auto"
+                                anchors.centerIn: parent
+                                text: "A"
+                                font.pixelSize: 11
+                            }
+
+                            FluTooltip {
+                                visible: modelData === "auto" && _swatchArea.containsMouse
+                                text: qsTr("Auto: adapts to the brightness of the screen behind the overlay")
+                                delay: 400
+                            }
+
+                            MouseArea {
+                                id: _swatchArea
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                    GlobalModel.languageOverlayColor = modelData
+                                    SettingsHelper.saveLanguageOverlayColor(modelData)
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Item { Layout.fillWidth: true }
             }
 
             // 全局快捷键: 开关浮窗显示 (应用不在前台也生效)
@@ -215,26 +278,6 @@ FluScrollablePage {
                     }
                 }
             }
-        }
-    }
-
-    FluFrame {
-        Layout.fillWidth: true
-        Layout.topMargin: 20
-        height: 50
-        padding: 10
-        FluCheckBox {
-            id: _isAlwaysCapLock
-            text: qsTr("Whether turn on Cap Lock when Always ENG is on")
-            anchors.verticalCenter: parent.verticalCenter
-            onClicked: {
-                GlobalModel.isAlwaysCapLock = checked
-                SettingsHelper.saveCapLock(GlobalModel.isAlwaysCapLock)
-            }
-        }
-
-        Component.onCompleted: {
-            _isAlwaysCapLock.checked = GlobalModel.isAlwaysCapLock
         }
     }
 }

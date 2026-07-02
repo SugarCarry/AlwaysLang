@@ -20,7 +20,6 @@ public:
     Q_INVOKABLE bool hasWindow() const;
     Q_INVOKABLE void setLanguageFollowDisplay(bool enabled);
     Q_INVOKABLE bool available() const;
-    Q_INVOKABLE void showMessage(const QString &title, const QString &message);
     Q_INVOKABLE void showWindow();
     Q_INVOKABLE void hide();
     Q_INVOKABLE void triggerToggleLanguageFollowDisplay();

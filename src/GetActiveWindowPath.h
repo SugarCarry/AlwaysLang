@@ -27,7 +27,6 @@ SINGLETON(GetActiveWindowPath)
 
 public:
     QString exeName;
-    QString exePath;
 
 private:
     SettingsHelper *m_settings = SettingsHelper::getInstance();

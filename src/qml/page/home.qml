@@ -12,6 +12,20 @@ FluContentPage {
     // 控制表格是否能拖拽
     property bool dragEnabled: true
 
+    // 系统已安装的输入语言列表 [{langId, label, name}], 打开页面时检测一次
+    property var installedLanguages: ControlInputLayout.installedLanguages()
+
+    // 新增软件的默认目标语言: 优先 en-US, 未安装英文输入时取第一个已安装语言
+    property int defaultLanguageId: {
+        var english = ControlInputLayout.legacyLanguageToId("ENG")
+        for (var i = 0; i < installedLanguages.length; i++) {
+            if (installedLanguages[i].langId === english) {
+                return english
+            }
+        }
+        return installedLanguages.length > 0 ? installedLanguages[0].langId : english
+    }
+
     id: root
     title: qsTr("App-specific language settings")
 
@@ -29,6 +43,8 @@ FluContentPage {
                     anchors.fill: parent
                     source: options && options.icon ? options.icon : ""
                     sourceSize: Qt.size(80, 80)
+                    fillMode: Image.PreserveAspectFit
+                    smooth: true
                 }
             }
         }
@@ -74,7 +90,8 @@ FluContentPage {
                     id: language_combo
                     width: 90
                     editable: false
-                    model: ["ENG", "中", "한"]
+                    model: root.installedLanguages
+                    textRole: "label"
 
                     Component.onCompleted: {
                         var rowObj = table_view.getRow(row)
@@ -82,18 +99,27 @@ FluContentPage {
                         currentIndex = languageIndex(GlobalModel.exeInfos[exePath]['targetLanguage'])
                     }
 
+                    // 悬浮显示完整语言名 (如 "中文(中华人民共和国)")
+                    FluTooltip {
+                        visible: language_combo.hovered
+                                 && language_combo.currentIndex >= 0
+                                 && root.installedLanguages[language_combo.currentIndex] !== undefined
+                        text: visible ? root.installedLanguages[language_combo.currentIndex].name : ""
+                        delay: 400
+                    }
+
                     onActivated: {
                         var rowObj = table_view.getRow(row)
                         var exePath = rowObj.path
-                        var targetLanguage = model[index]
+                        var langId = root.installedLanguages[index].langId
 
-                        if (!ControlInputLayout.isTargetInputInstalled(targetLanguage)) {
+                        if (!ControlInputLayout.isTargetInputInstalled(langId)) {
                             showWarning(qsTr("The selected input language is not installed. Please install it in Windows language settings first."), 5000)
                             currentIndex = languageIndex(GlobalModel.exeInfos[exePath]['targetLanguage'])
                             return
                         }
 
-                        GlobalModel.exeInfos[exePath]['targetLanguage'] = targetLanguage
+                        GlobalModel.exeInfos[exePath]['targetLanguage'] = langId
                         rowObj.language = table_view.customItem(com_column_language)
                         table_view.setRow(row, rowObj)
 
@@ -174,7 +200,6 @@ FluContentPage {
 
             if (isChecked) {
                 myBtn.text = qsTr("Stop")
-                btn_AlwaysEnglish.enabled = !btn_AlwaysEnglish.enabled
                 btn_addApp.enabled = !btn_addApp.enabled
 
                 // 启动
@@ -184,7 +209,6 @@ FluContentPage {
                 showSuccess(qsTr("Start Successfully"))
             } else {
                 myBtn.text = qsTr("Start")
-                btn_AlwaysEnglish.enabled = !btn_AlwaysEnglish.enabled
                 btn_addApp.enabled = !btn_addApp.enabled
 
                 // 停止
@@ -211,40 +235,6 @@ FluContentPage {
                 left: parent.left
                 leftMargin: 10
                 verticalCenter: parent.verticalCenter
-            }
-
-            // 是否一直启动
-            FluToggleButton {
-                id: btn_AlwaysEnglish
-                text: qsTr("Always ENG")
-
-                normalColor: {
-                    if (checked) {
-                        btn_AlwaysEnglish.text = qsTr("Stop")
-                        return Qt.rgba(255, 0, 0, 1)
-                    } else {
-                        btn_AlwaysEnglish.text = qsTr("Always ENG")
-                        return FluTheme.dark ? Qt.rgba(62 / 255, 62 / 255, 62 / 255, 1) : Qt.rgba(254 / 255, 254 / 255, 254 / 255, 1)
-                    }
-                }
-
-                FluTooltip {
-                    visible: btn_AlwaysEnglish.hovered
-                    text: qsTr("Force all apps to use the set input method, ignoring the per-app list")
-                    delay: 400
-                }
-
-                onClicked: {
-                    table_view.enabled = !checked
-                    btn_addApp.enabled = !btn_addApp.enabled
-                    myBtn.enabled = !myBtn.enabled
-
-                    if (checked) {
-                        ControlInputLayout.alwaysStartTask()
-                    } else {
-                        ControlInputLayout.alwaysStoptTask()
-                    }
-                }
             }
 
             // 添加
@@ -353,12 +343,7 @@ FluContentPage {
                 description: qsTr("or click this button to add a software or shortcut"),
                 target: () => btn_addApp
             },
-            {title: qsTr("2. Start"), description: qsTr("click this button to start"), target: () => myBtn},
-            {
-                title: qsTr("2. Start"),
-                description: qsTr("or you can click this button to switch to English in all APP all the time"),
-                target: () => btn_AlwaysEnglish
-            }
+            {title: qsTr("2. Start"), description: qsTr("click this button to start"), target: () => myBtn}
         ]
     }
 
@@ -374,8 +359,17 @@ FluContentPage {
         }
 
         for (let key in GlobalModel.exeInfos) {
-            if (!GlobalModel.exeInfos[key].targetLanguage) {
-                GlobalModel.exeInfos[key].targetLanguage = "ENG"
+            // 旧版本以字符串 (ENG/中/한) 保存目标语言, 迁移为 LANGID 数值
+            var storedLanguage = GlobalModel.exeInfos[key].targetLanguage
+            if (typeof storedLanguage !== "number") {
+                GlobalModel.exeInfos[key].targetLanguage = ControlInputLayout.legacyLanguageToId(
+                            typeof storedLanguage === "string" ? storedLanguage : "ENG")
+            }
+
+            // 重新提取图标: 旧版本保存的图标尺寸不统一, 且软件更新后图标可能变化
+            var refreshedIcon = iconProvider.getExeIcon(key)
+            if (refreshedIcon !== "") {
+                GlobalModel.exeInfos[key].icon = refreshedIcon
             }
 
             table_view.appendRow({
@@ -397,7 +391,6 @@ FluContentPage {
             isChecked = true
             dragEnabled = false
             myBtn.text = qsTr("Stop")
-            btn_AlwaysEnglish.enabled = false
             btn_addApp.enabled = false
             if (!GlobalModel.isTaskRunning) {
                 ControlInputLayout.startTask()
@@ -453,7 +446,7 @@ FluContentPage {
             name: fileNameWithoutExtension,
             icon: fileIconBase64,
             isTurnOn: true,
-            targetLanguage: "ENG",
+            targetLanguage: root.defaultLanguageId,
             isCapLock: true,
         }
 
@@ -480,12 +473,17 @@ FluContentPage {
         SettingsHelper.saveExistingFilePath(jsonStr)
     }
 
-    function languageIndex(language) {
-        if (language === "中") {
-            return 1
+    function languageIndex(langId) {
+        for (var i = 0; i < root.installedLanguages.length; i++) {
+            if (root.installedLanguages[i].langId === langId) {
+                return i
+            }
         }
-        if (language === "한") {
-            return 2
+        // 未安装该语言时退回默认语言 (英语), 找不到再退回第一项
+        for (var j = 0; j < root.installedLanguages.length; j++) {
+            if (root.installedLanguages[j].langId === root.defaultLanguageId) {
+                return j
+            }
         }
         return 0
     }

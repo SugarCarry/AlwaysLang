@@ -20,172 +20,108 @@
 <context>
     <name>MainWindow</name>
     <message>
-        <location filename="qml/window/MainWindow.qml" line="12"/>
+        <location filename="qml/window/MainWindow.qml" line="11"/>
         <source>AlwaysLang</source>
         <translation type="unfinished">AlwaysLang</translation>
-    </message>
-    <message>
-        <location filename="qml/window/MainWindow.qml" line="69"/>
-        <location filename="qml/window/MainWindow.qml" line="107"/>
-        <location filename="qml/window/MainWindow.qml" line="115"/>
-        <source>Quit</source>
-        <translation type="unfinished">退出</translation>
-    </message>
-    <message>
-        <location filename="qml/window/MainWindow.qml" line="96"/>
-        <source>Warning</source>
-        <translation type="unfinished">警告</translation>
-    </message>
-    <message>
-        <location filename="qml/window/MainWindow.qml" line="97"/>
-        <source>The System dosen&apos;t have an English (US) input method insatlled
-The softeare will be unavailable!
-Please go to settings to install English (US) language.</source>
-        <oldsource>The System dosen&apos;t have an English (US) input insatlled
-The softeare will be unavailable!
-Please go to settings to install English (US) language.</oldsource>
-        <translation type="unfinished">系统没有安装美式英文输入法
-软件将不可用！
-请到设置里安装美式英文语言及输入法</translation>
-    </message>
-    <message>
-        <location filename="qml/window/MainWindow.qml" line="99"/>
-        <source>go to install</source>
-        <translation type="unfinished">去安装</translation>
-    </message>
-    <message>
-        <location filename="qml/window/MainWindow.qml" line="108"/>
-        <source>Are you sure you want to exit the program?</source>
-        <translation type="unfinished">确认要退出吗软件？</translation>
-    </message>
-    <message>
-        <location filename="qml/window/MainWindow.qml" line="109"/>
-        <source>Minimize</source>
-        <translation type="unfinished">最小化到托盘</translation>
-    </message>
-    <message>
-        <location filename="qml/window/MainWindow.qml" line="112"/>
-        <source>Friendly Reminder</source>
-        <translation type="unfinished">友情提示</translation>
-    </message>
-    <message>
-        <location filename="qml/window/MainWindow.qml" line="112"/>
-        <source>AlwaysLang is hidden from the tray, click on the tray to activate the window again</source>
-        <translation type="unfinished">AlwaysLang 已隐藏到托盘，点击托盘图标可重新打开窗口</translation>
-    </message>
-    <message>
-        <location filename="qml/window/MainWindow.qml" line="116"/>
-        <source>Cancel</source>
-        <translation type="unfinished">取消</translation>
     </message>
 </context>
 <context>
     <name>home</name>
     <message>
-        <location filename="qml/page/home.qml" line="16"/>
-        <source>App-specific settings</source>
-        <translation type="unfinished">APP 设置</translation>
+        <location filename="qml/page/home.qml" line="22"/>
+        <source>App-specific language settings</source>
+        <oldsource>App-specific settings</oldsource>
+        <translation type="unfinished">应用语言设置</translation>
     </message>
     <message>
-        <location filename="qml/page/home.qml" line="112"/>
+        <location filename="qml/page/home.qml" line="159"/>
         <source>Remove</source>
         <translation type="unfinished">移除</translation>
     </message>
     <message>
-        <location filename="qml/page/home.qml" line="143"/>
-        <location filename="qml/page/home.qml" line="159"/>
+        <location filename="qml/page/home.qml" line="185"/>
+        <location filename="qml/page/home.qml" line="202"/>
         <source>Start</source>
         <translation type="unfinished">启动</translation>
     </message>
     <message>
-        <location filename="qml/page/home.qml" line="191"/>
-        <location filename="qml/page/home.qml" line="198"/>
-        <source>AlwaysEnglish</source>
-        <translation type="unfinished">始终为英文</translation>
-    </message>
-    <message>
-        <location filename="qml/page/home.qml" line="143"/>
-        <location filename="qml/page/home.qml" line="150"/>
-        <location filename="qml/page/home.qml" line="195"/>
+        <location filename="qml/page/home.qml" line="185"/>
+        <location filename="qml/page/home.qml" line="192"/>
         <source>Stop</source>
         <translation type="unfinished">停    止</translation>
     </message>
     <message>
-        <location filename="qml/page/home.qml" line="157"/>
+        <location filename="qml/page/home.qml" line="200"/>
         <source>Start Successfully</source>
         <translation type="unfinished">启动成功</translation>
     </message>
     <message>
-        <location filename="qml/page/home.qml" line="205"/>
-        <source>Force all apps to use the set input method, ignoring the per-app list</source>
-        <translation type="unfinished">强制所有软件使用设定的输入法（忽略下方的应用列表，是否开启大小写键在设置里决定）</translation>
-    </message>
-    <message>
-        <location filename="qml/page/home.qml" line="225"/>
+        <location filename="qml/page/home.qml" line="269"/>
         <source>Add an APP</source>
         <translation type="unfinished">添加应用</translation>
     </message>
     <message>
-        <location filename="qml/page/home.qml" line="234"/>
+        <location filename="qml/page/home.qml" line="279"/>
         <source>select an APP</source>
         <translation type="unfinished">选择一个 APP</translation>
     </message>
     <message>
-        <location filename="qml/page/home.qml" line="256"/>
+        <location filename="qml/page/home.qml" line="107"/>
+        <source>The selected input language is not installed. Please install it in Windows language settings first.</source>
+        <translation type="unfinished">所选输入语言尚未安装，请先到 Windows 语言设置中安装</translation>
+    </message>
+    <message>
+        <location filename="qml/page/home.qml" line="301"/>
         <source>icon</source>
         <translation type="unfinished">应用图标</translation>
     </message>
     <message>
-        <location filename="qml/page/home.qml" line="267"/>
+        <location filename="qml/page/home.qml" line="313"/>
         <source>Turn on</source>
         <translation type="unfinished">启用</translation>
     </message>
     <message>
-        <location filename="qml/page/home.qml" line="271"/>
+        <location filename="qml/page/home.qml" line="318"/>
+        <source>Language</source>
+        <translation type="unfinished">目标语言</translation>
+    </message>
+    <message>
+        <location filename="qml/page/home.qml" line="323"/>
         <source>Cap Lock</source>
         <oldsource>Caps</oldsource>
         <translation type="unfinished">大小写键</translation>
     </message>
     <message>
-        <location filename="qml/page/home.qml" line="275"/>
+        <location filename="qml/page/home.qml" line="328"/>
         <source>Options</source>
         <translation type="unfinished">操作</translation>
     </message>
     <message>
-        <location filename="qml/page/home.qml" line="305"/>
-        <location filename="qml/page/home.qml" line="310"/>
+        <location filename="qml/page/home.qml" line="363"/>
+        <location filename="qml/page/home.qml" line="368"/>
         <source>1. Add Softwares</source>
         <translation type="unfinished">1. 添加软件</translation>
     </message>
     <message>
-        <location filename="qml/page/home.qml" line="306"/>
+        <location filename="qml/page/home.qml" line="364"/>
         <source>Drag the softwares or shortcuts in here</source>
         <translation type="unfinished">把软件或者快捷方式拖到这里</translation>
     </message>
     <message>
-        <location filename="qml/page/home.qml" line="311"/>
+        <location filename="qml/page/home.qml" line="369"/>
         <source>or click this button to add a software or shortcut</source>
         <translation type="unfinished">或者点这里添加软件</translation>
     </message>
     <message>
-        <location filename="qml/page/home.qml" line="314"/>
-        <location filename="qml/page/home.qml" line="316"/>
+        <location filename="qml/page/home.qml" line="372"/>
+        <location filename="qml/page/home.qml" line="374"/>
         <source>2. Start</source>
         <translation type="unfinished">2. 启动</translation>
     </message>
     <message>
-        <location filename="qml/page/home.qml" line="314"/>
+        <location filename="qml/page/home.qml" line="372"/>
         <source>click this button to start</source>
         <translation type="unfinished">点这里启动</translation>
-    </message>
-    <message>
-        <source>Other</source>
-        <translation type="obsolete">其它</translation>
-    </message>
-    <message>
-        <location filename="qml/page/home.qml" line="317"/>
-        <source>or you can click this button to switch to English in all APP all the time</source>
-        <translation type="unfinished">点这个就会在任何软件一直都开着英文输入法（适合单机游戏玩家）</translation>
     </message>
 </context>
 <context>
@@ -249,25 +185,32 @@ Please go to settings to install English (US) language.</oldsource>
         <translation type="unfinished">开机自启动</translation>
     </message>
     <message>
-        <location filename="qml/page/settings.qml" line="82"/>
+        <location filename="qml/page/settings.qml" line="60"/>
+        <source>Please run AlwaysLang as administrator once to change startup settings</source>
+        <translation type="unfinished">修改开机自启动需要管理员权限，请先以管理员身份运行一次 AlwaysLang</translation>
+    </message>
+    <message>
+        <location filename="qml/page/settings.qml" line="88"/>
         <source>Show current input language near cursor</source>
         <translation type="unfinished">在光标附近显示当前输入法语言</translation>
     </message>
     <message>
-        <location filename="qml/page/settings.qml" line="114"/>
+        <location filename="qml/page/settings.qml" line="116"/>
         <source>Overlay opacity</source>
         <translation type="unfinished">浮窗不透明度</translation>
     </message>
     <message>
-        <source>Sticky on Top</source>
-        <translation type="obsolete">窗口置顶</translation>
+        <location filename="qml/page/settings.qml" line="196"/>
+        <source>Overlay color</source>
+        <translation type="unfinished">浮窗颜色</translation>
     </message>
     <message>
-        <location filename="qml/page/settings.qml" line="112"/>
-        <source>Whether turn on Cap Lock when Always ENG is on</source>
-        <translation type="unfinished">当一直开启英文输入法时，是否一直打开大小写键</translation>
+        <location filename="qml/page/settings.qml" line="228"/>
+        <source>Auto: adapts to the brightness of the screen behind the overlay</source>
+        <translation type="unfinished">自动：根据浮窗背后画面的明暗自动调整底色</translation>
     </message>
     <message>
+        <location filename="qml/page/settings.qml" line="193"/>
         <source>Toggle overlay with a global shortcut</source>
         <translation type="unfinished">使用全局快捷键开关浮窗显示</translation>
     </message>

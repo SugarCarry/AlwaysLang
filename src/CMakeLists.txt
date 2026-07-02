@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 
-project(AlwaysLang VERSION 3.1 DESCRIPTION "AlwaysLang - per-app input language follower" LANGUAGES CXX)
+project(AlwaysLang VERSION 4.0 DESCRIPTION "AlwaysLang - per-app input language follower" LANGUAGES CXX)
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)

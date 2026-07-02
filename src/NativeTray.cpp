@@ -109,11 +109,6 @@ bool NativeTray::available() const {
     return QSystemTrayIcon::isSystemTrayAvailable();
 }
 
-void NativeTray::showMessage(const QString &title, const QString &message) {
-    ensureVisible();
-    m_tray->showMessage(title, message, QSystemTrayIcon::Information, 3000);
-}
-
 void NativeTray::showWindow() {
     if (!m_window) {
         return;

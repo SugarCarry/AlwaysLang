@@ -162,44 +162,32 @@ FluWindow {
         Rectangle {
             anchors.fill: parent
             radius: 6
-            color: FluTheme.dark ? Qt.rgba(0.12, 0.12, 0.12, 0.9) : Qt.rgba(1, 1, 1, 0.92)
+
+            // "auto" 根据浮层背后屏幕画面的明暗自动调整底色, 其余为用户选择的固定颜色
+            readonly property bool autoColor: GlobalModel.languageOverlayColor === "auto"
+            readonly property bool backdropDark: GlobalModel.caretRect.dark === true
+            readonly property color customColor: autoColor ? "transparent" : GlobalModel.languageOverlayColor
+
+            color: autoColor ? (backdropDark ? Qt.rgba(0.12, 0.12, 0.12, 0.9) : Qt.rgba(1, 1, 1, 0.92))
+                             : customColor
             border.width: 1
-            border.color: FluTheme.dark ? "#4C4C4C" : "#D6D6D6"
+            border.color: autoColor ? (backdropDark ? "#4C4C4C" : "#D6D6D6")
+                                    : Qt.darker(customColor, 1.25)
 
             FluText {
                 anchors.centerIn: parent
                 text: GlobalModel.currentLanguage
                 font: FluTextStyle.BodyStrong
+                // 按底色亮度自动选择黑/白文字, 保证可读
+                color: {
+                    if (parent.autoColor) {
+                        return parent.backdropDark ? "#FFFFFF" : "#1A1A1A"
+                    }
+                    var c = parent.customColor
+                    var luminance = 0.299 * c.r + 0.587 * c.g + 0.114 * c.b
+                    return luminance > 0.6 ? "#1A1A1A" : "#FFFFFF"
+                }
             }
-        }
-    }
-
-    FluContentDialog {
-        id: dialog
-        implicitWidth: 500
-        title: qsTr("Warning")
-        message: qsTr("The selected input language is not installed.\nPlease go to Windows language settings to install it first.")
-        buttonFlags: FluContentDialogType.PositiveButton
-        positiveText: qsTr("go to install")
-        onPositiveClicked: {
-            ControlInputLayout.gotoLanguageSettings();
-        }
-    }
-
-    FluContentDialog {
-        id: dialog_close
-        title: qsTr("Quit")
-        message: qsTr("Are you sure you want to exit the program?")
-        negativeText: qsTr("Minimize")
-        buttonFlags: FluContentDialogType.NegativeButton | FluContentDialogType.NeutralButton | FluContentDialogType.PositiveButton
-        onNegativeClicked: {
-            NativeTray.showMessage(qsTr("Friendly Reminder"), qsTr("AlwaysLang is hidden from the tray, click on the tray to activate the window again"));
-            timer_window_hide_delay.restart()
-        }
-        positiveText: qsTr("Quit")
-        neutralText: qsTr("Cancel")
-        onPositiveClicked: {
-            FluRouter.exit(0)
         }
     }
 
